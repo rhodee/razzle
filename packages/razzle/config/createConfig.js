@@ -76,6 +76,7 @@ module.exports = (
   const IS_WEB = target === 'web';
   const IS_PROD = env === 'prod';
   const IS_DEV = env === 'dev';
+  console.log({ process: process.env.NODE_ENV, dotenv: dotenv.raw })
   process.env.NODE_ENV = IS_PROD ? 'production' : 'development';
 
   const dotenv = getClientEnv(target, { clearConsole, host, port });
@@ -175,46 +176,46 @@ module.exports = (
           exclude: [paths.appBuild, /\.module\.css$/],
           use: IS_NODE
             ? // Style-loader does not work in Node.js without some crazy
-              // magic. Luckily we just need css-loader.
-              [
+            // magic. Luckily we just need css-loader.
+            [
+              {
+                loader: require.resolve('css-loader'),
+                options: {
+                  importLoaders: 1,
+                },
+              },
+            ]
+            : IS_DEV
+              ? [
+                require.resolve('style-loader'),
                 {
                   loader: require.resolve('css-loader'),
                   options: {
                     importLoaders: 1,
                   },
                 },
+                {
+                  loader: require.resolve('postcss-loader'),
+                  options: postCssOptions,
+                },
               ]
-            : IS_DEV
-              ? [
-                  require.resolve('style-loader'),
+              : ExtractTextPlugin.extract({
+                fallback: require.resolve('style-loader'),
+                use: [
                   {
                     loader: require.resolve('css-loader'),
                     options: {
                       importLoaders: 1,
+                      modules: false,
+                      minimize: true,
                     },
                   },
                   {
                     loader: require.resolve('postcss-loader'),
                     options: postCssOptions,
                   },
-                ]
-              : ExtractTextPlugin.extract({
-                  fallback: require.resolve('style-loader'),
-                  use: [
-                    {
-                      loader: require.resolve('css-loader'),
-                      options: {
-                        importLoaders: 1,
-                        modules: false,
-                        minimize: true,
-                      },
-                    },
-                    {
-                      loader: require.resolve('postcss-loader'),
-                      options: postCssOptions,
-                    },
-                  ],
-                }),
+                ],
+              }),
         },
         // Adds support for CSS Modules (https://github.com/css-modules/css-modules)
         // using the extension .module.css
@@ -223,25 +224,47 @@ module.exports = (
           exclude: [paths.appBuild],
           use: IS_NODE
             ? [
+              {
+                // on the server we do not need to embed the css and just want the identifier mappings
+                // https://github.com/webpack-contrib/css-loader#scope
+                loader: require.resolve('css-loader/locals'),
+                options: {
+                  modules: true,
+                  importLoaders: 1,
+                  localIdentName: '[path]__[name]___[local]',
+                },
+              },
+            ]
+            : IS_DEV
+              ? [
+                require.resolve('style-loader'),
                 {
-                  // on the server we do not need to embed the css and just want the identifier mappings
-                  // https://github.com/webpack-contrib/css-loader#scope
-                  loader: require.resolve('css-loader/locals'),
+                  loader: require.resolve('css-loader'),
                   options: {
                     modules: true,
                     importLoaders: 1,
                     localIdentName: '[path]__[name]___[local]',
                   },
                 },
+                {
+                  loader: require.resolve('postcss-loader'),
+                  options: postCssOptions,
+                },
               ]
-            : IS_DEV
-              ? [
-                  require.resolve('style-loader'),
+              : ExtractTextPlugin.extract({
+                fallback: {
+                  loader: require.resolve('style-loader'),
+                  options: {
+                    hmr: false,
+                  },
+                },
+                use: [
                   {
                     loader: require.resolve('css-loader'),
                     options: {
                       modules: true,
                       importLoaders: 1,
+                      minimize: true,
                       localIdentName: '[path]__[name]___[local]',
                     },
                   },
@@ -249,30 +272,8 @@ module.exports = (
                     loader: require.resolve('postcss-loader'),
                     options: postCssOptions,
                   },
-                ]
-              : ExtractTextPlugin.extract({
-                  fallback: {
-                    loader: require.resolve('style-loader'),
-                    options: {
-                      hmr: false,
-                    },
-                  },
-                  use: [
-                    {
-                      loader: require.resolve('css-loader'),
-                      options: {
-                        modules: true,
-                        importLoaders: 1,
-                        minimize: true,
-                        localIdentName: '[path]__[name]___[local]',
-                      },
-                    },
-                    {
-                      loader: require.resolve('postcss-loader'),
-                      options: postCssOptions,
-                    },
-                  ],
-                }),
+                ],
+              }),
         },
       ],
     },
@@ -478,7 +479,7 @@ module.exports = (
         target,
         onSuccessMessage: `Your application is running at http://${
           dotenv.raw.HOST
-        }:${dotenv.raw.PORT}`,
+          }:${dotenv.raw.PORT}`,
       }),
     ];
   }

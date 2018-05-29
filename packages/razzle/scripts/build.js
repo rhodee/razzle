@@ -1,7 +1,7 @@
 #! /usr/bin/env node
 'use strict';
 // Do this as the first thing so that any code reading it knows the right env.
-process.env.NODE_ENV = 'production';
+process.env.NODE_ENV = process.env.NODE_ENV || 'production';
 
 // Makes the script crash on unhandled rejections instead of silently
 // ignoring them. In the future, promise rejections that are not handled will
@@ -47,13 +47,13 @@ measureFileSizesBeforeBuild(paths.appBuildPublic)
         console.log(warnings.join('\n\n'));
         console.log(
           '\nSearch for the ' +
-            chalk.underline(chalk.yellow('keywords')) +
-            ' to learn more about each warning.'
+          chalk.underline(chalk.yellow('keywords')) +
+          ' to learn more about each warning.'
         );
         console.log(
           'To ignore, add ' +
-            chalk.cyan('// eslint-disable-next-line') +
-            ' to the line before.\n'
+          chalk.cyan('// eslint-disable-next-line') +
+          ' to the line before.\n'
         );
       } else {
         console.log(chalk.green('Compiled successfully.\n'));
@@ -75,11 +75,11 @@ function build(previousFileSizes) {
   try {
     razzle = require(paths.appRazzleConfig);
     /* eslint-disable no-empty */
-  } catch (e) {}
+  } catch (e) { }
   /* eslint-enable */
 
   if (razzle.clearConsole === false || !!razzle.host || !!razzle.port) {
-    logger.warn(`Specifying options \`port\`, \`host\`, and \`clearConsole\` in razzle.config.js has been deprecated. 
+    logger.warn(`Specifying options \`port\`, \`host\`, and \`clearConsole\` in razzle.config.js has been deprecated.
 Please use a .env file instead.
 
 ${razzle.host !== 'localhost' && `HOST=${razzle.host}`}
@@ -108,7 +108,7 @@ ${razzle.port !== '3000' && `PORT=${razzle.port}`}
 
   process.noDeprecation = true; // turns off that loadQuery clutter.
 
-  console.log('Creating an optimized production build...');
+  console.log(`Creating an optimized ${process.env.NODE_ENV} build...`);
   console.log('Compiling client...');
   // First compile the client. We need it to properly output assets.json (asset
   // manifest file with the correct hashes on file names BEFORE we can start
@@ -133,7 +133,7 @@ ${razzle.port !== '3000' && `PORT=${razzle.port}`}
         console.log(
           chalk.yellow(
             '\nTreating warnings as errors because process.env.CI = true.\n' +
-              'Most CI servers set it automatically.\n'
+            'Most CI servers set it automatically.\n'
           )
         );
         return reject(new Error(clientMessages.warnings.join('\n\n')));
@@ -160,7 +160,7 @@ ${razzle.port !== '3000' && `PORT=${razzle.port}`}
           console.log(
             chalk.yellow(
               '\nTreating warnings as errors because process.env.CI = true.\n' +
-                'Most CI servers set it automatically.\n'
+              'Most CI servers set it automatically.\n'
             )
           );
           return reject(new Error(serverMessages.warnings.join('\n\n')));
